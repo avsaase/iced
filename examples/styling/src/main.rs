@@ -110,11 +110,8 @@ impl Sandbox for Styling {
         )
         .height(100);
 
-        let checkbox = checkbox(
-            "Check me!",
-            self.checkbox_value,
-            Message::CheckboxToggled,
-        );
+        let checkbox = checkbox("Check me!", self.checkbox_value)
+            .on_toggle(Message::CheckboxToggled);
 
         let toggler = toggler(
             String::from("Toggle me!"),

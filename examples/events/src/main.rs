@@ -83,11 +83,8 @@ impl Application for Events {
                 .collect(),
         );
 
-        let toggle = checkbox(
-            "Listen to runtime events",
-            self.enabled,
-            Message::Toggled,
-        );
+        let toggle = checkbox("Listen to runtime events", self.enabled)
+            .on_toggle(Message::Toggled);
 
         let exit = button(
             text("Exit")
