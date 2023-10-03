@@ -46,7 +46,10 @@ impl Application for Example {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::DefaultChecked(value) => self.default_checkbox = value,
+            Message::DefaultChecked(value) => {
+                self.default_checkbox = value;
+                self.styled_checkbox_enabled = value;
+            }
             Message::CustomChecked(value) => self.custom_checkbox = value,
             Message::StyledChecked(value) => {
                 self.styled_checkbox_checked = value
@@ -80,30 +83,6 @@ impl Application for Example {
             .map(Element::from)
             .collect())
         .spacing(10);
-
-        // let checkbox_primary =
-        //     checkbox("Primary", self.styled_checkbox_checked)
-        //         .on_toggle_maybe(
-        //             self.default_checkbox.then(|| Message::StyledChecked),
-        //         )
-        //         .style(Checkbox::Primary);
-        // let checkbox_secondary =
-        //     checkbox("Secondary", self.styled_checkbox_checked)
-        //         .on_toggle_maybe(
-        //             self.default_checkbox.then(|| Message::StyledChecked),
-        //         )
-        //         .style(Checkbox::Secondary);
-        // let checkbox_success =
-        //     checkbox("Success", self.styled_checkbox_checked)
-        //         .on_toggle_maybe(
-        //             self.default_checkbox.then(|| Message::StyledChecked),
-        //         )
-        //         .style(Checkbox::Success);
-        // let checkbox_danger = checkbox("Danger", self.styled_checkbox_checked)
-        //     .on_toggle_maybe(
-        //         self.default_checkbox.then(|| Message::StyledChecked),
-        //     )
-        //     .style(Checkbox::Danger);
 
         let custom_checkbox = checkbox("Custom", self.custom_checkbox)
             .on_toggle(Message::CustomChecked)
