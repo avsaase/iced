@@ -35,12 +35,9 @@ impl Sandbox for Example {
     }
 
     fn view(&self) -> Element<Message> {
-        let pick_list = pick_list(
-            &Language::ALL[..],
-            self.selected_language,
-            Message::LanguageSelected,
-        )
-        .placeholder("Choose a language...");
+        let pick_list = pick_list(&Language::ALL[..], self.selected_language)
+            .on_selected(Message::LanguageSelected)
+            .placeholder("Choose a language...");
 
         let content = column![
             vertical_space(600),

@@ -133,13 +133,10 @@ impl Application for App {
                 ),
                 subtitle(
                     "Status",
-                    pick_list(
-                        toast::Status::ALL,
-                        Some(self.editing.status),
-                        Message::Status
-                    )
-                    .width(Length::Fill)
-                    .into()
+                    pick_list(toast::Status::ALL, Some(self.editing.status))
+                        .on_selected(Message::Status)
+                        .width(Length::Fill)
+                        .into()
                 ),
                 subtitle(
                     "Timeout",

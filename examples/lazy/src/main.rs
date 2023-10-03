@@ -190,16 +190,13 @@ impl Sandbox for App {
                             text(&item.name)
                                 .style(theme::Text::Color(item.color.into())),
                             horizontal_space(Length::Fill),
-                            pick_list(
-                                Color::ALL,
-                                Some(item.color),
-                                move |color| {
+                            pick_list(Color::ALL, Some(item.color))
+                                .on_selected(move |color| {
                                     Message::ItemColorChanged(
                                         item.clone(),
                                         color,
                                     )
-                                }
-                            ),
+                                }),
                             button
                         ]
                         .spacing(20)
