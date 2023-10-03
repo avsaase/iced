@@ -617,6 +617,28 @@ impl pick_list::StyleSheet for Theme {
             PickList::Custom(custom, _) => custom.hovered(self),
         }
     }
+
+    fn disabled(
+        &self,
+        style: &<Self as pick_list::StyleSheet>::Style,
+    ) -> pick_list::Appearance {
+        match style {
+            PickList::Default => {
+                let palette = self.extended_palette();
+
+                pick_list::Appearance {
+                    text_color: palette.background.strong.color,
+                    background: palette.background.weak.color.into(),
+                    placeholder_color: palette.background.strong.color,
+                    handle_color: palette.background.strong.color,
+                    border_radius: 2.0.into(),
+                    border_width: 1.0,
+                    border_color: palette.background.strong.color,
+                }
+            }
+            PickList::Custom(custom, _) => custom.active(self),
+        }
+    }
 }
 
 /// The style of a radio button.

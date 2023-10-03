@@ -29,7 +29,7 @@ where
     Renderer: text::Renderer,
     Renderer::Theme: StyleSheet,
 {
-    on_selected: Box<dyn Fn(T) -> Message + 'a>,
+    on_selected: Option<Box<dyn Fn(T) -> Message + 'a>>,
     options: Cow<'a, [T]>,
     placeholder: Option<String>,
     selected: Option<T>,
@@ -58,15 +58,11 @@ where
     /// The default padding of a [`PickList`].
     pub const DEFAULT_PADDING: Padding = Padding::new(5.0);
 
-    /// Creates a new [`PickList`] with the given list of options, the current
-    /// selected value, and the message to produce when an option is selected.
-    pub fn new(
-        options: impl Into<Cow<'a, [T]>>,
-        selected: Option<T>,
-        on_selected: impl Fn(T) -> Message + 'a,
-    ) -> Self {
+    /// Creates a new [`PickList`] with the given list of options and the current
+    /// selected value.
+    pub fn new(options: impl Into<Cow<'a, [T]>>, selected: Option<T>) -> Self {
         Self {
-            on_selected: Box::new(on_selected),
+            on_selected: None,
             options: options.into(),
             placeholder: None,
             selected,
@@ -79,6 +75,29 @@ where
             handle: Default::default(),
             style: Default::default(),
         }
+    }
+
+    /// Sets the message to produce when an option is selected.
+    ///
+    /// Unless `on_selected` is called, the [`PickList`] will be disabled.
+    pub fn on_selected(
+        mut self,
+        on_selected: impl Fn(T) -> Message + 'a,
+    ) -> Self {
+        self.on_selected = Some(Box::new(on_selected));
+        self
+    }
+
+    /// Sets the message to produce when an option is selected, if `Some`.
+    ///
+    /// If `None`, the [`PickList`] will be disabled.
+    pub fn on_selected_maybe(
+        mut self,
+        on_selected: Option<impl Fn(T) -> Message + 'a>,
+    ) -> Self {
+        self.on_selected =
+            on_selected.map(|f| Box::new(f) as Box<dyn Fn(T) -> Message>);
+        self
     }
 
     /// Sets the placeholder of the [`PickList`].
@@ -207,7 +226,7 @@ where
             layout,
             cursor,
             shell,
-            self.on_selected.as_ref(),
+            self.on_selected.as_deref(),
             self.selected.as_ref(),
             &self.options,
             || tree.state.downcast_mut::<State>(),
@@ -222,7 +241,8 @@ where
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
-        mouse_interaction(layout, cursor)
+        let is_enabled = self.on_selected.is_some();
+        mouse_interaction(layout, cursor, is_enabled)
     }
 
     fn draw(
@@ -248,6 +268,7 @@ where
             font,
             self.placeholder.as_deref(),
             self.selected.as_ref(),
+            self.on_selected.is_some(),
             &self.handle,
             &self.style,
             || tree.state.downcast_ref::<State>(),
@@ -262,17 +283,21 @@ where
     ) -> Option<overlay::Element<'b, Message, Renderer>> {
         let state = tree.state.downcast_mut::<State>();
 
-        overlay(
-            layout,
-            state,
-            self.padding,
-            self.text_size,
-            self.text_shaping,
-            self.font.unwrap_or_else(|| renderer.default_font()),
-            &self.options,
-            &self.on_selected,
-            self.style.clone(),
-        )
+        if let Some(on_selected) = &self.on_selected {
+            overlay(
+                layout,
+                state,
+                self.padding,
+                self.text_size,
+                self.text_shaping,
+                self.font.unwrap_or_else(|| renderer.default_font()),
+                &self.options,
+                on_selected,
+                self.style.clone(),
+            )
+        } else {
+            None
+        }
     }
 }
 
@@ -433,7 +458,7 @@ pub fn update<'a, T, Message>(
     layout: Layout<'_>,
     cursor: mouse::Cursor,
     shell: &mut Shell<'_, Message>,
-    on_selected: &dyn Fn(T) -> Message,
+    on_selected: Option<&dyn Fn(T) -> Message>,
     selected: Option<&T>,
     options: &[T],
     state: impl FnOnce() -> &'a mut State,
@@ -441,6 +466,12 @@ pub fn update<'a, T, Message>(
 where
     T: PartialEq + Clone + 'a,
 {
+    let Some(on_selected) = on_selected else {
+        let state = state();
+        state.is_open = false;
+        return event::Status::Ignored;
+    };
+
     match event {
         Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
         | Event::Touch(touch::Event::FingerPressed { .. }) => {
@@ -520,12 +551,17 @@ where
 pub fn mouse_interaction(
     layout: Layout<'_>,
     cursor: mouse::Cursor,
+    is_enabled: bool,
 ) -> mouse::Interaction {
     let bounds = layout.bounds();
     let is_mouse_over = cursor.is_over(bounds);
 
-    if is_mouse_over {
-        mouse::Interaction::Pointer
+    if is_enabled {
+        if is_mouse_over {
+            mouse::Interaction::Pointer
+        } else {
+            mouse::Interaction::default()
+        }
     } else {
         mouse::Interaction::default()
     }
@@ -597,6 +633,7 @@ pub fn draw<'a, T, Renderer>(
     font: Renderer::Font,
     placeholder: Option<&str>,
     selected: Option<&T>,
+    is_enabled: bool,
     handle: &Handle<Renderer::Font>,
     style: &<Renderer::Theme as StyleSheet>::Style,
     state: impl FnOnce() -> &'a State,
@@ -609,10 +646,14 @@ pub fn draw<'a, T, Renderer>(
     let is_mouse_over = cursor.is_over(bounds);
     let is_selected = selected.is_some();
 
-    let style = if is_mouse_over {
-        theme.hovered(style)
+    let style = if is_enabled {
+        if is_mouse_over {
+            theme.hovered(style)
+        } else {
+            theme.active(style)
+        }
     } else {
-        theme.active(style)
+        theme.disabled(style)
     };
 
     renderer.fill_quad(

@@ -236,7 +236,6 @@ where
 pub fn pick_list<'a, Message, Renderer, T>(
     options: impl Into<Cow<'a, [T]>>,
     selected: Option<T>,
-    on_selected: impl Fn(T) -> Message + 'a,
 ) -> PickList<'a, T, Message, Renderer>
 where
     T: ToString + Eq + 'static,
@@ -249,7 +248,7 @@ where
     <Renderer::Theme as overlay::menu::StyleSheet>::Style:
         From<<Renderer::Theme as pick_list::StyleSheet>::Style>,
 {
-    PickList::new(options, selected, on_selected)
+    PickList::new(options, selected)
 }
 
 /// Creates a new [`ComboBox`].

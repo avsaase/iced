@@ -30,4 +30,7 @@ pub trait StyleSheet {
 
     /// Produces the hovered [`Appearance`] of a pick list.
     fn hovered(&self, style: &<Self as StyleSheet>::Style) -> Appearance;
+
+    /// Produces the disabled [`Appearance`] of a pick list.
+    fn disabled(&self, style: &<Self as StyleSheet>::Style) -> Appearance;
 }
